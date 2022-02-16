@@ -20,8 +20,8 @@ import requests
 
 import nltk
 from nltk.corpus import stopwords
-nltk.download('stopwords')
-nltk.download('averaged_perceptron_tagger')
+# nltk.download('stopwords')
+# nltk.download('averaged_perceptron_tagger')
 
 # from spacy.lookups import Lookups
 
@@ -872,16 +872,24 @@ class CogcompKairosEventExtractorTest:
         tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view = Get_CogComp_SRL_and_NER_results(
             input_sentence)
 
-        print("*"*100)
+        print("verb_SRL_view:")
+        print("-"*100)
         print(verb_SRL_view)
-        print("*"*100)
+        print("-"*100)
 
-        print("\nidentified_triggers\n")
+        print("\n")
+        print("identified_triggers:")
+        print("\n")
         for t in identified_trigger_positions:
-            print(tokens[t[0]], end=' ')
+            print(t, " : ", tokens[t[0]], end=' ,')
+        print("\n")
+        print("-"*100)
+        print("\n")
+
+
 
         selected_trigger_positions = list()
-        print('identified trigger positions', identified_trigger_positions)
+        # print('identified trigger positions', identified_trigger_positions)
         for tmp_position in identified_trigger_positions:
             tmp_embedding = get_represetation(tokens, (tmp_position[0], tmp_position[1]),
                                               self.tokenizer,
@@ -892,11 +900,28 @@ class CogcompKairosEventExtractorTest:
             print(sorted_types[:5])
             if decision:
                 selected_trigger_positions.append(tmp_position)
-            elif filter_words(tokens[tmp_position[0]], exclude_words=[], no_stop_words=True, tag_prefix="VB", selected_tags=[], stop_words=stop_words_list):
-                selected_trigger_positions.append(tmp_position)
-        print("*"*100)
-        print('selected trigger positions', selected_trigger_positions)
-        print("*"*100)
+            
+            # elif filter_words(tokens[tmp_position[0]], exclude_words=[], no_stop_words=True, tag_prefix="VB", selected_tags=[], stop_words=stop_words_list):
+            #     selected_trigger_positions.append(tmp_position)
+
+        selected_trigger_positions_set = set([(x,y) for (x,y) in selected_trigger_positions])
+        print(selected_trigger_positions_set)
+        for data in verb_SRL_view['viewData']:
+            for constituent in data['constituents']:
+                if constituent['label'] == 'Predicate':
+                    tmp_pos = (constituent['start'] , constituent['end'])
+                    if tmp_pos not in selected_trigger_positions_set:
+                        selected_trigger_positions.append(tmp_pos)
+        print("selected_trigger_positions:", selected_trigger_positions)
+
+        
+        print("\n")
+        print("-"*100)
+        for t in selected_trigger_positions:
+            print(t, " : ", tokens[t[0]], end=' , ')
+        print("\n")
+        print("-"*100)
+        print("\n")
 
         predictions = list()
         for tmp_trigger_position in selected_trigger_positions:
