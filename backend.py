@@ -30,11 +30,26 @@ def Get_CogComp_SRL_results(input_sentence):
     # print('Match tokens.')
 
 def preprocess_input_text(input_text=""):
-    input_text = input_text.encode().decode("utf-8")
-    input_text = re.sub("'", " ' ", input_text)
-    # input_text = re.sub('\"', ' \" ', input_text)
-    input_text = re.sub(",", " , ", input_text)
-    input_text = re.sub(".", " . ", input_text)
+    input_text = input_text.encode('utf-8').decode('utf-8')
+    # l = ["!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"]
+    special_char_list = ["!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"]
+    # for char in special_char_list:
+    #     input_text = re.sub(, " ", input_text)
+    if "'" in input_text:
+        input_text = re.sub("'", " ' ", input_text)
+    if "(" in input_text:
+        input_text = re.sub("(", " ( ", input_text)
+    if ")" in input_text:
+        input_text = re.sub(")", " ) ", input_text)
+    if "," in input_text:
+        input_text = re.sub(",", " , ", input_text)
+    if "’" in input_text:
+        input_text = re.sub("’", " ' ", input_text)
+    if "“" in input_text:
+        input_text = re.sub("“", " \" ", input_text)
+    if "”" in input_text:
+        input_text = re.sub("”", " \" ", input_text)
+        
     input_text = re.sub("\s+", " ", input_text)
 
     return input_text
