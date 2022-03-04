@@ -1,9 +1,10 @@
 import cherrypy
-# import cherrypy_cors
+import cherrypy_cors
 import json
 import os
 from util import *
 import re
+from time import time
 
 # import < your_code >
 
@@ -15,7 +16,11 @@ def Get_CogComp_SRL_results(input_sentence):
     # print('Extracting the events.')
     SRL_tokens = list()
     SRL_sentences = list()
-    SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_sentence)
+    # SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_sentence)
+    # start_time_all_srl = time()
+    SRL_response = requests.get('http://leguin.seas.upenn.edu:4039/annotate', data=input_sentence)
+    # print("Processing Time for SRL backend: ", time() - start_time_all_srl)
+
     if SRL_response.status_code != 200:
         return None, None
     SRL_result = json.loads(SRL_response.text)
@@ -24,7 +29,15 @@ def Get_CogComp_SRL_results(input_sentence):
     return SRL_tokens, SRL_sentences
     # print('Match tokens.')
 
+def preprocess_input_text(input_text=""):
+    input_text = input_text.encode().decode("utf-8")
+    input_text = re.sub("'", " ' ", input_text)
+    # input_text = re.sub('\"', ' \" ', input_text)
+    input_text = re.sub(",", " , ", input_text)
+    input_text = re.sub(".", " . ", input_text)
+    input_text = re.sub("\s+", " ", input_text)
 
+    return input_text
 
 class MyWebService(object):
 
@@ -46,7 +59,7 @@ class MyWebService(object):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def annotate(self):
-
+        start_time = time()
         hasJSON = True
         result = {"status": "false"}
         try:
@@ -59,6 +72,7 @@ class MyWebService(object):
         if hasJSON:
             # process input
             input_paragraph = data['text']
+            input_paragraph = preprocess_input_text(input_paragraph)
             
             headers = {'Content-type': 'application/json'}
 #             input_paragraph = re.sub(r'[\n]', ' ', input_paragraph)
@@ -68,18 +82,20 @@ class MyWebService(object):
             if NER_response.status_code != 200:
                 return {'error': 'The NER service is down.'}
             
-#             # SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_paragraph)
-#             SRL_response = requests.post('http://dickens.seas.upenn.edu:4039/annotate',
-#                                          json={'sentence': "Hello world."})
+            # SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_paragraph)
+            # SRL_response = requests.post('http://leguin.seas.upenn.edu:4039/annotate',
+            #                              json={'sentence': "Hello world."})
 
-#             if SRL_response.status_code != 200:
-#                 return {'error': 'The SRL service is down.'}
+            # if SRL_response.status_code != 200:
+            #     return {'error': 'The SRL service is down.'}
             
             
             SRL_tokens, SRL_sentences = Get_CogComp_SRL_results(input_paragraph)
             
+
             if (not SRL_tokens) or (not SRL_sentences):
                 return {'error': 'The SRL service is down.'}
+
             
             print(SRL_sentences['sentenceEndPositions'])
             
@@ -100,7 +116,8 @@ class MyWebService(object):
             
             # sentences = input_paragraph.split('\n')
             
-            print('Number of sentences:', len(sentences))
+            # print('Number of sentences:', len(sentences))
+            print('Number of sentences:', len(SRL_sentences['sentenceEndPositions']))
             
             previous_char = 0
             tmp_view_data = dict()
@@ -114,7 +131,10 @@ class MyWebService(object):
             sentence_positions = list()
             previous_char = 0
             for s_id, tmp_s in enumerate(sentences):
+                # start_time_event = time()
                 extracted_events = extractor.extract(tmp_s)
+                # print("Processing Time for 1 sentence event extraction: ", time() - start_time_event)
+                
                 print(extracted_events)
                 if len(extracted_events) > 0:
                     tmp_tokens = extracted_events[0]['tokens']
@@ -147,7 +167,7 @@ class MyWebService(object):
             event_ie_view = dict()
             event_ie_view['viewName'] = 'Event_extraction'
             event_ie_view['viewData'] = [tmp_view_data]
-            
+
             token_view = dict()
             token_view['viewName'] = 'TOKENS'
             tmp_token_view_data = dict()
@@ -168,7 +188,12 @@ class MyWebService(object):
             result['sentences'] = SRL_sentences
             result['views'] = [token_view, event_ie_view]
 
-    # return resulting JSON
+
+            # result['tokens'] = all_tokens
+            # result['sentences'] = {'generator': 'srl_pipeline', 'score': 1.0, 'sentenceEndPositions': sentence_positions}
+        # return resulting JSON
+        print("Processing Time for Event Extraction: ", time() - start_time)
+        # print(result)
         return result
 
 
@@ -200,11 +225,11 @@ if __name__ == '__main__':
     extractor = CogcompKairosEventExtractorTest(device, 'mbert')
     # IN ORDER TO KEEP IT IN MEMORY
     print("Starting rest service...")
-#     cherrypy_cors.install()
+    cherrypy_cors.install()
     config = {
         'global': {
             'server.socket_host': 'leguin.seas.upenn.edu',
-            'server.socket_port': 4040,
+            'server.socket_port': 4023,
             'cors.expose.on': True
         },
         '/': {
