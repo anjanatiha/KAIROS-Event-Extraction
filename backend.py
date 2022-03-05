@@ -37,10 +37,6 @@ def preprocess_input_text(input_text=""):
     #     input_text = re.sub(, " ", input_text)
     if "'" in input_text:
         input_text = re.sub("'", " ' ", input_text)
-    if "(" in input_text:
-        input_text = re.sub("(", " ( ", input_text)
-    if ")" in input_text:
-        input_text = re.sub(")", " ) ", input_text)
     if "," in input_text:
         input_text = re.sub(",", " , ", input_text)
     if "’" in input_text:
@@ -49,10 +45,63 @@ def preprocess_input_text(input_text=""):
         input_text = re.sub("“", " \" ", input_text)
     if "”" in input_text:
         input_text = re.sub("”", " \" ", input_text)
+    if "—" in input_text:
+        input_text = re.sub("—", " - ", input_text)
+    if "(" in input_text:
+        input_text = re.sub("\(", " ( ", input_text)
+    if ")" in input_text:
+        input_text = re.sub("\)", " ) ", input_text)
+    if "-" in input_text:
+        input_text = re.sub("-", " - ", input_text)
+    if "?" in input_text:
+        input_text = re.sub("\?", " ? ", input_text)
+    if "!" in input_text:
+        input_text = re.sub("!", " ! ", input_text)
+    if "$" in input_text:
+        input_text = re.sub("\$", " $ ", input_text)
+    if "%" in input_text:
+        input_text = re.sub("%", " % ", input_text)
+    if "#" in input_text:
+        input_text = re.sub("#", " # ", input_text)
+    if "*" in input_text:
+        input_text = re.sub("\*", " * ", input_text)
+    if "+" in input_text:
+        input_text = re.sub("\+", " + ", input_text)
+    if "/" in input_text:
+        input_text = re.sub("/", " / ", input_text)
+    if ":" in input_text:
+        input_text = re.sub(":", " : ", input_text)
+    if ";" in input_text:
+        input_text = re.sub(";", " ; ", input_text)
+    if "<" in input_text:
+        input_text = re.sub("<", " < ", input_text)
+    if "=" in input_text:
+        input_text = re.sub("=", " = ", input_text)
+    if ">" in input_text:
+        input_text = re.sub(">", " > ", input_text)
+    if "[" in input_text:
+        input_text = re.sub("\[", " [ ", input_text)
+    if "]" in input_text:
+        input_text = re.sub("\]", " ] ", input_text)
+    if "{" in input_text:
+        input_text = re.sub("{", " { ", input_text)
+    if "}" in input_text:
+        input_text = re.sub("}", " } ", input_text)
+    if "_" in input_text:
+        input_text = re.sub("_", " _ ", input_text)
+    if "&" in input_text:
+        input_text = re.sub("&", " & ", input_text)
+    if "~" in input_text:
+        input_text = re.sub("~", " ~ ", input_text)
+    if "|" in input_text:
+        input_text = re.sub("|", " | ", input_text)
+    if "^" in input_text:
+        input_text = re.sub("\^", " ^ ", input_text)
         
     input_text = re.sub("\s+", " ", input_text)
 
     return input_text
+
 
 class MyWebService(object):
 
@@ -83,12 +132,11 @@ class MyWebService(object):
         except:
             hasJSON = False
             result = {"error": "invalid input"}
-
+        
         if hasJSON:
             # process input
             input_paragraph = data['text']
             input_paragraph = preprocess_input_text(input_paragraph)
-            
             headers = {'Content-type': 'application/json'}
 #             input_paragraph = re.sub(r'[\n]', ' ', input_paragraph)
             
@@ -104,9 +152,7 @@ class MyWebService(object):
             # if SRL_response.status_code != 200:
             #     return {'error': 'The SRL service is down.'}
             
-            
             SRL_tokens, SRL_sentences = Get_CogComp_SRL_results(input_paragraph)
-            
 
             if (not SRL_tokens) or (not SRL_sentences):
                 return {'error': 'The SRL service is down.'}
@@ -207,7 +253,9 @@ class MyWebService(object):
             # result['tokens'] = all_tokens
             # result['sentences'] = {'generator': 'srl_pipeline', 'score': 1.0, 'sentenceEndPositions': sentence_positions}
         # return resulting JSON
-        print("Processing Time for Event Extraction: ", time() - start_time)
+        end_time = time()
+        print("Processing Time for Event Extraction: ", end_time - start_time)
+        print("Average Time for Event Extraction   : ", (end_time - start_time)/len(SRL_sentences['sentenceEndPositions']))
         # print(result)
         return result
 
