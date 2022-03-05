@@ -8,6 +8,7 @@ from time import time
 
 # import < your_code >
 
+from nltk import sent_tokenize
 
 def Get_CogComp_SRL_results(input_sentence):
 
@@ -35,12 +36,14 @@ def preprocess_input_text(input_text=""):
     special_char_list = ["!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"]
     # for char in special_char_list:
     #     input_text = re.sub(, " ", input_text)
+    if "\n" in input_text:
+        input_text = re.sub("\n+", " ", input_text)
     if "'" in input_text:
         input_text = re.sub("'", " ' ", input_text)
     if "," in input_text:
         input_text = re.sub(",", " , ", input_text)
     if "’" in input_text:
-        input_text = re.sub("’", " ' ", input_text)
+        input_text = re.sub("\’", " ' ", input_text)
     if "“" in input_text:
         input_text = re.sub("“", " \" ", input_text)
     if "”" in input_text:
