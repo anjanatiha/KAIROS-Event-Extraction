@@ -118,7 +118,7 @@ def preprocess_input_text(input_text="", multi=False, special_char_convert=True,
         input_text = re.sub("\+", " + ", input_text)
     if "*" in input_text and "*" in char_list:
         input_text = re.sub("\*", " * ", input_text)
-    if "/" in input_text "/" in char_list:
+    if "/" in input_text and "/" in char_list:
         input_text = re.sub("/", " / ", input_text)
     if "<" in input_text and "<" in char_list:
         input_text = re.sub("<", " < ", input_text)
