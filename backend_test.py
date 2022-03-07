@@ -2,25 +2,56 @@ import cherrypy
 import cherrypy_cors
 import json
 import os
-from util import *
+from util_test import *
 import re
 from time import time
 
 # import < your_code >
 
+from nltk import sent_tokenize, word_tokenize
+
+special_char_list = ["'", ",", ";", ":", "-", "?", "!", "$", "%", "#", "_", "&", "~", "|", "^", "+", "*", "/", "<", "=", ">", "(", ")", "{", "}", "[", "]"]
+    
+def flatten(t):
+    return [item for sublist in t for item in sublist]
+
+
+def Get_CogComp_SRL_results2(input_sentence):
+    start_time = time()
+
+    sentences = sent_tokenize(input_sentence)
+    
+    tokens = list()
+    sentences_end = list()
+
+    last_end = 0
+
+    for s in sentences:
+        tmp_tokens = word_tokenize(s)
+        last_end = last_end + len(tmp_tokens)
+        sentences_end.append(last_end)
+        tokens.append(tmp_tokens)
+
+    tokens = flatten(tokens)
+    SRL_sentences = {'generator': 'srl_pipeline', 'score': 1.0, 'sentenceEndPositions': sentences_end}
+    end_time = time()
+    print("***Processing Time new:", end_time-start_time)
+    
+    # print(tokens)
+    # print(sentences_end)
+
+    return tokens, SRL_sentences, sentences
+
 
 def Get_CogComp_SRL_results(input_sentence):
-
-
+    start_time = time()
     # We then work on Celine's SRL system.
     # print('Extracting the events.')
     SRL_tokens = list()
     SRL_sentences = list()
     # SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_sentence)
     # start_time_all_srl = time()
-    SRL_response = requests.post('http://leguin.seas.upenn.edu:4039/annotate', json={'sentence': input_sentence, 'task': "tokenize"})
-    
-    
+    SRL_response = requests.post('http://leguin.seas.upenn.edu:4039/annotate', data=input_sentence)
     # print("Processing Time for SRL backend: ", time() - start_time_all_srl)
 
     if SRL_response.status_code != 200:
@@ -28,9 +59,92 @@ def Get_CogComp_SRL_results(input_sentence):
     SRL_result = json.loads(SRL_response.text)
     SRL_tokens = SRL_result['tokens']
     SRL_sentences = SRL_result['sentences']
+    # end_time = time()
     return SRL_tokens, SRL_sentences
+
     # print('Match tokens.')
 
+def preprocess_input_text(input_text="", multi=False, special_char_convert=True, char_list=[]):
+    start_time = time()
+    input_text = input_text.encode('utf-8').decode('utf-8')
+    # special_char_list = ["!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"]
+    
+    if multi and "\n" in input_text:
+        input_text = re.sub("\n+", " ", input_text)
+    if special_char_convert and "’" in input_text:
+        input_text = re.sub("\’", " ' ", input_text)
+    if special_char_convert and "“" in input_text:
+        input_text = re.sub("“", " \" ", input_text)
+    if special_char_convert and "”" in input_text:
+        input_text = re.sub("”", " \" ", input_text)
+    if special_char_convert and "—" in input_text:
+        input_text = re.sub("—", " - ", input_text)
+
+
+    if "'" in input_text and "'" in char_list:
+        input_text = re.sub("'", " ' ", input_text)
+    if "," in input_text and "," in char_list:
+        input_text = re.sub(",", " , ", input_text)
+    if ";" in input_text and ";" in char_list:
+        input_text = re.sub(";", " ; ", input_text)
+    if ":" in input_text ":" in char_list:
+        input_text = re.sub(":", " : ", input_text)
+    if "-" in input_text and "-" in char_list:
+        input_text = re.sub("-", " - ", input_text)
+    if "?" in input_text and "?" in char_list:
+        input_text = re.sub("\?", " ? ", input_text)
+    if "!" in input_text and "!" in char_list:
+        input_text = re.sub("!", " ! ", input_text)
+
+    if "$" in input_text and "$" in char_list:
+        input_text = re.sub("\$", " $ ", input_text)
+    if "%" in input_text and "%" in char_list:
+        input_text = re.sub("%", " % ", input_text)
+    if "#" in input_text and "#" in char_list:
+        input_text = re.sub("#", " # ", input_text)
+
+    if "_" in input_text and "_" in char_list:
+        input_text = re.sub("_", " _ ", input_text)
+    if "&" in input_text and "&" in char_list:
+        input_text = re.sub("&", " & ", input_text)
+    if "~" in input_text and "~"  in char_list:
+        input_text = re.sub("~", " ~ ", input_text)
+    if "|" in input_text and "|" in char_list:
+        input_text = re.sub("|", " | ", input_text)
+    if "^" in input_text and "^" in char_list:
+        input_text = re.sub("\^", " ^ ", input_text)
+
+    if "+" in input_text and "+" in char_list:
+        input_text = re.sub("\+", " + ", input_text)
+    if "*" in input_text and "*" in char_list:
+        input_text = re.sub("\*", " * ", input_text)
+    if "/" in input_text "/" in char_list:
+        input_text = re.sub("/", " / ", input_text)
+    if "<" in input_text and "<" in char_list:
+        input_text = re.sub("<", " < ", input_text)
+    if "=" in input_text and "=" in char_list:
+        input_text = re.sub("=", " = ", input_text)
+    if ">" in input_text and ">" in char_list:
+        input_text = re.sub(">", " > ", input_text)
+
+    if "(" in input_text and "(" in char_list:
+        input_text = re.sub("\(", " ( ", input_text)
+    if ")" in input_text and ")" in char_list:
+        input_text = re.sub("\)", " ) ", input_text)
+    if "{" in input_text and "{" in char_list:
+        input_text = re.sub("{", " { ", input_text)
+    if "}" in input_text and "}" in char_list:
+        input_text = re.sub("}", " } ", input_text)
+    if "[" in input_text and "[" in char_list:
+        input_text = re.sub("\[", " [ ", input_text)
+    if "]" in input_text and "]" in char_list:
+        input_text = re.sub("\]", " ] ", input_text)
+        
+    input_text = re.sub("\s+", " ", input_text)
+
+    end_time = time()
+    print("***Processing Time (preprocessing): ", time() - start_time)
+    return input_text
 
 
 class MyWebService(object):
@@ -62,34 +176,35 @@ class MyWebService(object):
         except:
             hasJSON = False
             result = {"error": "invalid input"}
-
+        
         if hasJSON:
             # process input
             input_paragraph = data['text']
-            
-            headers = {'Content-type': 'application/json'}
+            input_paragraph = preprocess_input_text(input_paragraph, multi=True, special_char_convert=True, char_list=special_char_list)
+            ###
+            # headers = {'Content-type': 'application/json'}
+
 #             input_paragraph = re.sub(r'[\n]', ' ', input_paragraph)
             
-            NER_response = requests.post('http://dickens.seas.upenn.edu:4022/ner/',
-                                         json={"task": "ner", "text": "Hello world."}, headers=headers)
-            if NER_response.status_code != 200:
-                return {'error': 'The NER service is down.'}
+            # NER_response = requests.post('http://dickens.seas.upenn.edu:4022/ner/',
+            #                              json={"task": "ner", "text": "Hello world."}, headers=headers)
+            # if NER_response.status_code != 200:
+            #     return {'error': 'The NER service is down.'}
             
-            # SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_paragraph)
+            # SRL_response = requests.get('http://leguin.seas.upenn.edu:4039/annotate', data=input_paragraph)
             # SRL_response = requests.post('http://leguin.seas.upenn.edu:4039/annotate',
             #                              json={'sentence': "Hello world."})
 
             # if SRL_response.status_code != 200:
+                # return {'error': 'The SRL service is down.'}
+            
+            # SRL_tokens, SRL_sentences = Get_CogComp_SRL_results(input_paragraph)
+            SRL_tokens, SRL_sentences, sentences2 = Get_CogComp_SRL_results2(input_paragraph)
+            # print("SRL_sentences : ", SRL_sentences)
+
+            # if (not SRL_tokens) or (not SRL_sentences):
             #     return {'error': 'The SRL service is down.'}
-            
-            
-            SRL_tokens, SRL_sentences = Get_CogComp_SRL_results(input_paragraph)
-            
 
-            if (not SRL_tokens) or (not SRL_sentences):
-                return {'error': 'The SRL service is down.'}
-
-            
             print(SRL_sentences['sentenceEndPositions'])
             
             
@@ -124,9 +239,9 @@ class MyWebService(object):
             sentence_positions = list()
             previous_char = 0
             for s_id, tmp_s in enumerate(sentences):
-                # start_time_event = time()
+                start_time_event = time()
                 extracted_events = extractor.extract(tmp_s)
-                # print("Processing Time for 1 sentence event extraction: ", time() - start_time_event)
+                print("Processing Time for 1 sentence event extraction: ", time() - start_time_event)
                 
                 print(extracted_events)
                 if len(extracted_events) > 0:
@@ -185,7 +300,9 @@ class MyWebService(object):
             # result['tokens'] = all_tokens
             # result['sentences'] = {'generator': 'srl_pipeline', 'score': 1.0, 'sentenceEndPositions': sentence_positions}
         # return resulting JSON
-        print("Processing Time for Event Extraction: ", time() - start_time)
+        end_time = time()
+        print("***Processing Time for Event Extraction: ", end_time - start_time)
+        print("***Average Time for Event Extraction   : ", (end_time - start_time)/len(SRL_sentences['sentenceEndPositions']))
         # print(result)
         return result
 
