@@ -854,9 +854,12 @@ class CogcompKairosEventExtractorTest:
 
         start_time = time()
 
-        start_time_onto = time()
+        
         selected_trigger_positions = list()
         print('identified trigger positions', identified_trigger_positions)
+
+        start_time_onto = time()
+
         for tmp_position in identified_trigger_positions:
             tmp_embedding = get_represetation(tokens, (tmp_position[0], tmp_position[1]),
                                               self.tokenizer,
@@ -867,8 +870,9 @@ class CogcompKairosEventExtractorTest:
             print(sorted_types[:5])
             if decision:
                 selected_trigger_positions.append(tmp_position)
-        print('selected trigger positions', selected_trigger_positions)
         print("***Processing Time (Onto) : ", time() - start_time_onto)
+        print('selected trigger positions', selected_trigger_positions)
+        
 
         start_time_type = time()
         predictions = list()
@@ -884,7 +888,7 @@ class CogcompKairosEventExtractorTest:
             #         get_similarity_score(tmp_embedding, self.etype_to_distinct_embeddings[tmp_etype]))
             # argument_scores = list()
             # entity_types = list()
-            for tmp_argument_position in trigger_to_arguments[tmp_trigger_position]:
+            # for tmp_argument_position in trigger_to_arguments[tmp_trigger_position]:
             #     sent_emb = get_represetation(tokens, (tmp_argument_position[0],
             #                                           tmp_argument_position[1]),
             #                                  self.tokenizer, self.model, self.device, representation_type='mask')
@@ -953,20 +957,20 @@ class CogcompKairosEventExtractorTest:
             #     tmp_event['sentence'] = input_sentence
             #     tmp_event['tokens'] = tokens
             #     predictions.append(tmp_event)
-                ### added
-                tmp_event = dict()
-                tmp_event['trigger'] = {'position': tmp_trigger_position, 'type': ''}
-                tmp_event['arguments'] = list()
-                for i, tmp_argument_position in enumerate(trigger_to_arguments[tmp_trigger_position]):
-                    tmp_event['arguments'].append(
-                        {'position': tmp_argument_position, 'role': '',
-                            'entity_type': detected_mentions[tmp_argument_position].lower()})
-                tmp_event['sentence'] = input_sentence
-                tmp_event['tokens'] = tokens
-                predictions.append(tmp_event)
-                #### end
+            ### added
+            tmp_event = dict()
+            tmp_event['trigger'] = {'position': tmp_trigger_position, 'type': ''}
+            tmp_event['arguments'] = list()
+            for i, tmp_argument_position in enumerate(trigger_to_arguments[tmp_trigger_position]):
+                tmp_event['arguments'].append(
+                    {'position': tmp_argument_position, 'role': '',
+                        'entity_type': detected_mentions[tmp_argument_position].lower()})
+            tmp_event['sentence'] = input_sentence
+            tmp_event['tokens'] = tokens
+            predictions.append(tmp_event)
+            #### end
 
-        print("***Processing Time(Typing) :", time()-start_time)
+        print("***Processing Time(Typing) :", time()-start_time_type)
         print("***Processing Time (extract except SRL and NER): ", time() - start_time)
         return predictions
 
