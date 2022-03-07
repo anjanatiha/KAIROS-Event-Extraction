@@ -51,7 +51,7 @@ def Get_CogComp_SRL_results(input_sentence):
     SRL_sentences = list()
     # SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_sentence)
     # start_time_all_srl = time()
-    SRL_response = requests.post('http://leguin.seas.upenn.edu:4039/annotate', data=input_sentence)
+    SRL_response = requests.get('http://leguin.seas.upenn.edu:4039/annotate', data=input_sentence)
     # print("Processing Time for SRL backend: ", time() - start_time_all_srl)
 
     if SRL_response.status_code != 200:
@@ -180,7 +180,8 @@ class MyWebService(object):
         if hasJSON:
             # process input
             input_paragraph = data['text']
-            input_paragraph = preprocess_input_text(input_paragraph, multi=True, special_char_convert=True, char_list=special_char_list)
+            # input_paragraph = preprocess_input_text(input_paragraph, multi=True, special_char_convert=True, char_list=special_char_list)
+            input_paragraph = preprocess_input_text(input_paragraph, multi=True, special_char_convert=True, char_list=[])
             ###
             # headers = {'Content-type': 'application/json'}
 
@@ -198,8 +199,8 @@ class MyWebService(object):
             # if SRL_response.status_code != 200:
                 # return {'error': 'The SRL service is down.'}
             
-            # SRL_tokens, SRL_sentences = Get_CogComp_SRL_results(input_paragraph)
-            SRL_tokens, SRL_sentences, sentences2 = Get_CogComp_SRL_results2(input_paragraph)
+            SRL_tokens, SRL_sentences = Get_CogComp_SRL_results(input_paragraph)
+            # SRL_tokens, SRL_sentences, sentences2 = Get_CogComp_SRL_results2(input_paragraph)
             # print("SRL_sentences : ", SRL_sentences)
 
             # if (not SRL_tokens) or (not SRL_sentences):
