@@ -919,7 +919,7 @@ class CogcompKairosEventExtractorTest:
                 if constituent['label'] == 'Predicate':
                     tmp_pos = (constituent['start'] , constituent['end'])
                     if tmp_pos not in selected_trigger_positions_set:
-                        if filter_words(tokens[tmp_pos[0]], stop_words=stop_words_list):
+                        if filter_words(tokens[tmp_pos[0]], tag_prefix="V", stop_words=stop_words_list): 
                             selected_trigger_positions.append(tmp_pos)
 
 
