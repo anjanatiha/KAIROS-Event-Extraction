@@ -16,8 +16,30 @@ from spacy.lemmatizer import Lemmatizer
 import requests
 from time import time
 
+import nltk
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
 # from spacy.lookups import Lookups
 
+
+stop_words_list = set(stopwords.words('english'))
+exclude_words_list = set({"am", "is", "was", "were", "has", "had", "have", "are", "be", "been"})
+def filter_words(w, exclude_words=[], no_stop_words=True, tag_prefix="", selected_tags=[], stop_words=stop_words_list):
+    if w in exclude_words:
+        # print(w, " in ", "exclude_words_list")
+        return False
+    if no_stop_words and w in stop_words:
+        # print(w , " in ", stop_words)
+        return False
+
+    tagged = nltk.pos_tag([w])
+    
+    if (tag_prefix and tagged[0][1][:len(tag_prefix)]==tag_prefix) or (tagged[0][1] in selected_tags):
+        return True
+    # else:
+    #     print(w, " is ", tagged)
+    return True
 
 def load_event_ontology(path):
     # we need to load the event ontology
@@ -881,14 +903,34 @@ class CogcompKairosEventExtractorTest:
             if decision:
                 selected_trigger_positions.append(tmp_position)
         print("***Processing Time (Onto) : ", time() - start_time_onto)
-        print('\nselected trigger positions', selected_trigger_positions)
+        print('\nselected trigger positions : ', selected_trigger_positions)
         
         print("\n---Selected Triggers: \n")
         for i in range(len(selected_trigger_positions)):
             print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
         print("\n\n")
 
-        start_time_type = time()
+
+
+        selected_trigger_positions_set = set([(x,y) for (x,y) in selected_trigger_positions])
+        print("selected_trigger_positions_set:", selected_trigger_positions_set)
+        for data in verb_SRL_view['viewData']:
+            for constituent in data['constituents']:
+                if constituent['label'] == 'Predicate':
+                    tmp_pos = (constituent['start'] , constituent['end'])
+                    if tmp_pos not in selected_trigger_positions_set:
+                        if filter_words(tokens[tmp_pos[0]], stop_words=stop_words_list):
+                            selected_trigger_positions.append(tmp_pos)
+
+
+        print('\nselected trigger positions(all verbs included): ', selected_trigger_positions)
+        
+        print("\n---Selected Triggers((all verbs included)): \n")
+        for i in range(len(selected_trigger_positions)):
+            print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
+        print("\n\n")
+
+        # start_time_type = time()
         predictions = list()
         for tmp_trigger_position in selected_trigger_positions:
             # tmp_embedding = get_represetation(tokens,
@@ -984,7 +1026,7 @@ class CogcompKairosEventExtractorTest:
             predictions.append(tmp_event)
             #### end
 
-        print("***Processing Time(Typing) :", time()-start_time_type)
+        # print("***Processing Time(Typing) :", time()-start_time_type)
         print("***Processing Time (extract except SRL and NER): ", time() - start_time)
         return predictions
 
