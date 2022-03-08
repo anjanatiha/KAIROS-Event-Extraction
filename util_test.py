@@ -24,8 +24,8 @@ nltk.download('averaged_perceptron_tagger')
 
 
 stop_words_list = set(stopwords.words('english'))
-exclude_words_list = set({"am", "is", "was", "were", "has", "had", "have", "are", "be", "been"})
-def filter_words(w, exclude_words=[], no_stop_words=True, tag_prefix="", selected_tags=[], stop_words=stop_words_list):
+exclude_words_list = set({"am", "is", "was", "were", "has", "had", "have", "are", "be", "been", "according", "suggest", "suggests", "suggested", "told", "said", "says", "tells", "tell"})
+def filter_words(w, exclude_words=(), no_stop_words=True, tag_prefix="", selected_tags=[], stop_words=stop_words_list):
     if w in exclude_words:
         # print(w, " in ", "exclude_words_list")
         return False
@@ -620,7 +620,7 @@ class CogcompKairosEventExtractor:
 
 
 def Get_CogComp_SRL_and_NER_results(input_sentence):
-    start_time = time()
+    # start_time = time()
     # Variables we need to fill
     tokens = list()
     identified_trigger_positions = list()
@@ -745,12 +745,12 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
     for tmp_trigger in trigger_to_arguments:
         trigger_to_arguments[tmp_trigger] = list(set(trigger_to_arguments[tmp_trigger]))
 
-    end_time = time()
-    print("***Processing Time (SRL & NER ) :", end_time - start_time)
-    print('tokens:', tokens)
-    print('detected mentions:', detected_mentions)
-    print('identified_trigger_positions:', identified_trigger_positions)
-    print('trigger_to_arguments:', trigger_to_arguments)
+    # end_time = time()
+    # print("***Processing Time (SRL & NER ) :", end_time - start_time)
+    # print('tokens:', tokens)
+    # print('detected mentions:', detected_mentions)
+    # print('identified_trigger_positions:', identified_trigger_positions)
+    # print('trigger_to_arguments:', trigger_to_arguments)
 
     return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view
 
@@ -873,7 +873,8 @@ class CogcompKairosEventExtractorTest:
     def extract(self, input_sentence):
         tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view = Get_CogComp_SRL_and_NER_results(
             input_sentence)
-        print("---TOKENS: \n")
+
+        print("\n---TOKENS: \n")
         for i in range(len(tokens)):
             print(i, " : ", tokens[i], end=" , ")
         print("\n\n")
@@ -885,12 +886,14 @@ class CogcompKairosEventExtractorTest:
             print(i, " : ", tokens[identified_trigger_positions[i][0]], end=" , ")
         print("\n\n")
 
-        start_time = time()
+        # print('\ndetected mentions:', detected_mentions)
+        # print('\ntrigger_to_arguments:', trigger_to_arguments)
+        # start_time = time()
         
         selected_trigger_positions = list()
 
 
-        start_time_onto = time()
+        # start_time_onto = time()
 
         for tmp_position in identified_trigger_positions:
             tmp_embedding = get_represetation(tokens, (tmp_position[0], tmp_position[1]),
@@ -899,36 +902,36 @@ class CogcompKairosEventExtractorTest:
                                               self.device)
             decision, sorted_types = make_prediction_new(tmp_embedding, self.etype_embeddings, self.all_event_types,
                                                          self.etype_radius)
-            print(sorted_types[:5])
+            # print(sorted_types[:5])
             if decision:
                 selected_trigger_positions.append(tmp_position)
-        print("***Processing Time (Onto) : ", time() - start_time_onto)
-        print('\nselected trigger positions : ', selected_trigger_positions)
+        # print("***Processing Time (Onto) : ", time() - start_time_onto)
+        # print('\nselected trigger positions : ', selected_trigger_positions)
         
-        print("\n---Selected Triggers: \n")
-        for i in range(len(selected_trigger_positions)):
-            print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
-        print("\n\n")
+        # print("\n---Selected Triggers: \n")
+        # for i in range(len(selected_trigger_positions)):
+        #     print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
+        # print("\n\n")
 
 
 
         selected_trigger_positions_set = set([(x,y) for (x,y) in selected_trigger_positions])
-        print("selected_trigger_positions_set:", selected_trigger_positions_set)
+        # print("selected_trigger_positions_set: ", selected_trigger_positions_set)
         for data in verb_SRL_view['viewData']:
             for constituent in data['constituents']:
                 if constituent['label'] == 'Predicate':
                     tmp_pos = (constituent['start'] , constituent['end'])
                     if tmp_pos not in selected_trigger_positions_set:
-                        if filter_words(tokens[tmp_pos[0]], tag_prefix="V", stop_words=stop_words_list): 
+                        if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="V", stop_words=stop_words_list): 
                             selected_trigger_positions.append(tmp_pos)
 
 
-        print('\nselected trigger positions(all verbs included): ', selected_trigger_positions)
+        # print('\nselected trigger positions(all verbs included): ', selected_trigger_positions)
         
-        print("\n---Selected Triggers((all verbs included)): \n")
-        for i in range(len(selected_trigger_positions)):
-            print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
-        print("\n\n")
+        # print("\n---Selected Triggers((all verbs included)): \n")
+        # for i in range(len(selected_trigger_positions)):
+        #     print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
+        # print("\n\n")
 
         # start_time_type = time()
         predictions = list()
@@ -1027,7 +1030,7 @@ class CogcompKairosEventExtractorTest:
             #### end
 
         # print("***Processing Time(Typing) :", time()-start_time_type)
-        print("***Processing Time (extract except SRL and NER): ", time() - start_time)
+        # print("***Processing Time (extract except SRL and NER): ", time() - start_time)
         return predictions
 
     def extract_with_annotation(self, input_sentence, tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments):
