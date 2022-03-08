@@ -730,7 +730,7 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
     print('identified_trigger_positions:', identified_trigger_positions)
     print('trigger_to_arguments:', trigger_to_arguments)
 
-    return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments
+    return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view
 
 
 class CogcompKairosEventExtractorTest:
@@ -849,14 +849,24 @@ class CogcompKairosEventExtractorTest:
             self.etype_radius[tmp_e_type] = best_radius
 
     def extract(self, input_sentence):
-        tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments = Get_CogComp_SRL_and_NER_results(
+        tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view = Get_CogComp_SRL_and_NER_results(
             input_sentence)
+        print("---TOKENS: \n")
+        for i in range(len(tokens)):
+            print(i, " : ", tokens[i], end=" , ")
+        print("\n\n")
+
+        print('\n---identified trigger positions : ', identified_trigger_positions)
+        
+        print("\n---Identified Triggers: \n")
+        for i in range(len(identified_trigger_positions)):
+            print(i, " : ", tokens[identified_trigger_positions[i][0]], end=" , ")
+        print("\n\n")
 
         start_time = time()
-
         
         selected_trigger_positions = list()
-        print('identified trigger positions', identified_trigger_positions)
+
 
         start_time_onto = time()
 
@@ -871,8 +881,12 @@ class CogcompKairosEventExtractorTest:
             if decision:
                 selected_trigger_positions.append(tmp_position)
         print("***Processing Time (Onto) : ", time() - start_time_onto)
-        print('selected trigger positions', selected_trigger_positions)
+        print('\nselected trigger positions', selected_trigger_positions)
         
+        print("\n---Selected Triggers: \n")
+        for i in range(len(selected_trigger_positions)):
+            print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
+        print("\n\n")
 
         start_time_type = time()
         predictions = list()
