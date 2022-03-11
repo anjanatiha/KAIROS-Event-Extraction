@@ -2,7 +2,7 @@ import cherrypy
 import cherrypy_cors
 import json
 import os
-from util_test import *
+from util_test_org import *
 import re
 from time import time
 
@@ -231,8 +231,6 @@ class MyWebService(object):
                 # return {'error': 'The SRL service is down.'}
             
             SRL_tokens, SRL_sentences = Get_CogComp_SRL_results(input_paragraph)
-            print(SRL_tokens)
-            print(SRL_sentences)
             # SRL_tokens, SRL_sentences, sentences2 = Get_CogComp_SRL_results3(input_paragraph)
             # print("SRL_sentences : ", SRL_sentences)
 
@@ -277,10 +275,8 @@ class MyWebService(object):
             previous_char = 0
             sentence_list = []
             for s_id, tmp_s in enumerate(sentences):
-                sentence_list.append(tmp_s)
                 # start_time_event = time()
                 extracted_events = extractor.extract(tmp_s, include_all_verbs=False)
-                # extracted_events = extractor.extract(data['text'], include_all_verbs=False)
                 # print("Processing Time for 1 sentence event extraction: ", time() - start_time_event)
                 
                 print(extracted_events)
@@ -312,7 +308,7 @@ class MyWebService(object):
                              'end': argument_end_token_id, 'entity_type': tmp_argument['entity_type']})
                 previous_char += len(sentences_by_char[s_id])
 
-            modified_text = " ".join([s for s in sentence_list]).strip()
+            # modified_text = " ".join([s for s in sentence_list]).strip()
             event_ie_view = dict()
             event_ie_view['viewName'] = 'Event_extraction'
             event_ie_view['viewData'] = [tmp_view_data]
@@ -329,19 +325,18 @@ class MyWebService(object):
                 tmp_token_view_data['constituents'].append({'label': tmp_token, 'score': 1.0, 'start': i, 'end': i+1})
             token_view['viewData'] = tmp_token_view_data
 
-            print("\nsentence_list:\n", sentence_list, "\n")
+            # print("\nsentence_list:\n", sentence_list, "\n")
             result = dict()
             result['corpusId'] = ''
             result['id'] = ''
-            # result['text'] = data['text']
-            result['text'] = modified_text
-            # result['tokens'] = SRL_tokens
-            # result['sentences'] = SRL_sentences
+            result['text'] = data['text']
+            result['tokens'] = SRL_tokens
+            result['sentences'] = SRL_sentences
             result['views'] = [token_view, event_ie_view]
 
 
-            result['tokens'] = all_tokens
-            result['sentences'] = {'generator': 'srl_pipeline', 'score': 1.0, 'sentenceEndPositions': sentence_positions}
+            # result['tokens'] = all_tokens
+            # result['sentences'] = {'generator': 'srl_pipeline', 'score': 1.0, 'sentenceEndPositions': sentence_positions}
         # return resulting JSON
         end_time = time()
         print("***Processing Time for Event Extraction: ", end_time - start_time)
