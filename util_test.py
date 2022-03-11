@@ -653,7 +653,6 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
         return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments
     SRL_result = json.loads(SRL_response.text)
     SRL_tokens = SRL_result['tokens']
-    SRL_sentences = SRL_result['sentences']
     # print('Match tokens.')
     token_mapping = map_tokens_to_tokens(SRL_tokens, tokens)
 
@@ -753,7 +752,7 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
     # print('identified_trigger_positions:', identified_trigger_positions)
     # print('trigger_to_arguments:', trigger_to_arguments)
 
-    return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences
+    return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view
 
 
 class CogcompKairosEventExtractorTest:
@@ -872,7 +871,7 @@ class CogcompKairosEventExtractorTest:
             self.etype_radius[tmp_e_type] = best_radius
 
     def extract(self, input_sentence, include_all_verbs=False):
-        tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences = Get_CogComp_SRL_and_NER_results(
+        tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view = Get_CogComp_SRL_and_NER_results(
             input_sentence)
 
         print("\n---TOKENS:")
@@ -1029,7 +1028,7 @@ class CogcompKairosEventExtractorTest:
 
         # print("***Processing Time(Typing) :", time()-start_time_type)
         # print("***Processing Time (extract except SRL and NER): ", time() - start_time)
-        return predictions, SRL_sentences
+        return predictions
 
     def extract_with_annotation(self, input_sentence, tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments):
 
