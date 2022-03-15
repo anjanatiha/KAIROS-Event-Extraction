@@ -907,7 +907,7 @@ class CogcompKairosEventExtractorTest:
                 selected_trigger_positions.append(tmp_position)
         # print("***Processing Time (Onto) : ", time() - start_time_onto)
         print('selected trigger positions : ', selected_trigger_positions)
-        print("---Selected Triggers: \n")
+        print("\n---Selected Triggers: \n")
         for i in range(len(selected_trigger_positions)):
             print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
         print("\n")
@@ -925,7 +925,7 @@ class CogcompKairosEventExtractorTest:
                                 selected_trigger_positions.append(tmp_pos)
 
                 print('selected trigger positions(all verbs included): ', selected_trigger_positions)
-                print("---Selected Triggers((all verbs included)):")
+                print("\n---Selected Triggers((all verbs included)):")
                 for i in range(len(selected_trigger_positions)):
                     print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
                 print("\n")
@@ -1028,7 +1028,7 @@ class CogcompKairosEventExtractorTest:
 
         # print("***Processing Time(Typing) :", time()-start_time_type)
         # print("***Processing Time (extract except SRL and NER): ", time() - start_time)
-        return predictions
+        return predictions, tokens
 
     def extract_with_annotation(self, input_sentence, tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments):
 
