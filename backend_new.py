@@ -2,7 +2,7 @@ import cherrypy
 import cherrypy_cors
 import json
 import os
-from util_test import *
+from util_new import *
 import re
 from time import time
 import regex
@@ -220,7 +220,7 @@ class MyWebService(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
-    def annotate2(self):
+    def annotate(self):
         start_time = time()
         hasJSON = True
         result = {"status": "false"}
@@ -300,7 +300,7 @@ class MyWebService(object):
             for s_id, tmp_s in enumerate(sentences):
                 # print(s_id, " : ", tmp_s)
                 # start_time_event = time()
-                extracted_events, tmp_tokens, SRL_sentences2 = extractor.extract(tmp_s, include_all_verbs=False)
+                extracted_events, tmp_tokens, SRL_sentences2 = extractor.extract(tmp_s, include_all_verbs=True, include_all_nouns=True)
                 # print("Processing Time for 1 sentence event extraction: ", time() - start_time_event)
                 
                 print(extracted_events)
@@ -369,7 +369,7 @@ class MyWebService(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
-    def annotate(self):
+    def annotate_multi(self):
         start_time = time()
         hasJSON = True
         result = {"status": "false"}
