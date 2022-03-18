@@ -16,13 +16,14 @@ from spacy.lemmatizer import Lemmatizer
 import requests
 from time import time
 
+import json
 import nltk
 from nltk.corpus import stopwords
 nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
 # from spacy.lookups import Lookups
 
-
+freq_limit  = 0.0001
 stop_words_list = set(stopwords.words('english'))
 exclude_words_list = set({ "according", "suggest", "suggests", "suggested", "suggesting", "tell", "tells", "telling", "told", "say", "says", "said", "saying", "based", "would", "including", "understand", "understands", "understood", "think", "thinks", "thinking", "thought"})
 def filter_words(w, exclude_words=(), no_stop_words=True, tag_prefix="", selected_tags=[], stop_words=stop_words_list):
@@ -653,6 +654,8 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
     if SRL_response.status_code != 200:
         return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments
     SRL_result = json.loads(SRL_response.text)
+    # SRL_result2 = json.loads(SRL_response2.text)
+    # print("\nSRL_result2: ", SRL_result2)
     SRL_tokens = SRL_result['tokens']
     SRL_sentences = SRL_result['sentences']
     # print('Match tokens.')
@@ -872,7 +875,7 @@ class CogcompKairosEventExtractorTest:
                     best_radius = tmp_radius
             self.etype_radius[tmp_e_type] = best_radius
 
-    def extract(self, input_sentence, include_all_verbs=False):
+    def extract(self, input_sentence, include_all_verbs=False, include_all_nouns=False):
         tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences = Get_CogComp_SRL_and_NER_results(
             input_sentence)
 
@@ -924,9 +927,32 @@ class CogcompKairosEventExtractorTest:
                         tmp_pos = (constituent['start'] , constituent['end'])
                         if tmp_pos not in selected_trigger_positions_set:
                             if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="V", stop_words=stop_words_list): 
-                                selected_trigger_positions.append(tmp_pos)
+                                #### test begin
+                                if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit: 
+                                    #### test end
+                                    selected_trigger_positions.append(tmp_pos)
 
                 print('selected trigger positions(all verbs included): ', selected_trigger_positions)
+                print("\n---Selected Triggers((all verbs included)):")
+                for i in range(len(selected_trigger_positions)):
+                    print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
+                print("\n")
+
+        if include_all_nouns:
+            selected_trigger_positions_set = set([(x,y) for (x,y) in selected_trigger_positions])
+            # print("selected_trigger_positions_set: ", selected_trigger_positions_set)
+            for data in nominal_SRL_view['viewData']:
+                for constituent in data['constituents']:
+                    if constituent['label'] == 'Predicate':
+                        tmp_pos = (constituent['start'] , constituent['end'])
+                        if tmp_pos not in selected_trigger_positions_set:
+                            if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="V", stop_words=stop_words_list): 
+                                #### test begin
+                                if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit: 
+                                    #### test end
+                                    selected_trigger_positions.append(tmp_pos)
+
+                print('selected trigger positions(all nouns included): ', selected_trigger_positions)
                 print("\n---Selected Triggers((all verbs included)):")
                 for i in range(len(selected_trigger_positions)):
                     print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
@@ -1158,6 +1184,11 @@ role_keywords = ontology['role_keywords']
 
 with open('data/expan-v1.json', 'r') as f:
     expanded_trigger_keywords = json.load(f)
+
+
+with open('data/word_fequency.json') as json_file:
+    word_fequency = json.load(json_file)
+
 
 # for tmp_e_type in expanded_trigger_keywords:
 #     for tmp_expanded_keyword in expanded_trigger_keywords[tmp_e_type]['expansion'][:3]:
