@@ -23,7 +23,9 @@ nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
 # from spacy.lookups import Lookups
 
-freq_limit  = 0.0001
+freq_limit_verb  = 0.00006
+freq_limit_nominal  = 0.00001
+
 stop_words_list = set(stopwords.words('english'))
 exclude_words_list = set({ "according", "suggest", "suggests", "suggested", "suggesting", "tell", "tells", "telling", "told", "say", "says", "said", "saying", "based", "would", "including", "understand", "understands", "understood", "think", "thinks", "thinking", "thought"})
 def filter_words(w, exclude_words=(), no_stop_words=True, tag_prefix="", selected_tags=[], stop_words=stop_words_list):
@@ -649,15 +651,21 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
     # We then work on Celine's SRL system.
     # print('Extracting the events.')
     # SRL_response = requests.get('http://dickens.seas.upenn.edu:4039/annotate', data=input_sentence)
+    # SRL_response = requests.post('http://leguin.seas.upenn.edu:4039/annotate',
+    #                              json={'sentence': input_sentence})
+
     SRL_response = requests.post('http://leguin.seas.upenn.edu:4039/annotate',
-                                 json={'sentence': input_sentence})
+                                 json={"task": "verb_srl_temporal", "sentence": input_sentence}, headers=headers)
+    
     if SRL_response.status_code != 200:
         return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments
-    SRL_result = json.loads(SRL_response.text)
+    SRL_results = json.loads(SRL_response.text)
+    SRL_result = SRL_results["text_annotation"]
     # SRL_result2 = json.loads(SRL_response2.text)
     # print("\nSRL_result2: ", SRL_result2)
     SRL_tokens = SRL_result['tokens']
     SRL_sentences = SRL_result['sentences']
+    verb_srl_temporal = SRL_results['verb_srl_temporal']
     # print('Match tokens.')
     token_mapping = map_tokens_to_tokens(SRL_tokens, tokens)
 
@@ -757,7 +765,7 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
     # print('identified_trigger_positions:', identified_trigger_positions)
     # print('trigger_to_arguments:', trigger_to_arguments)
 
-    return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences
+    return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences, verb_srl_temporal
 
 
 class CogcompKairosEventExtractorTest:
@@ -875,8 +883,8 @@ class CogcompKairosEventExtractorTest:
                     best_radius = tmp_radius
             self.etype_radius[tmp_e_type] = best_radius
 
-    def extract(self, input_sentence, include_all_verbs=False, include_all_nouns=False):
-        tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences = Get_CogComp_SRL_and_NER_results(
+    def extract(self, input_sentence, include_all_verbs=False, include_all_nouns=False, demo_version=False):
+        tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences, verb_srl_temporal = Get_CogComp_SRL_and_NER_results(
             input_sentence)
 
         print("\n---TOKENS:")
@@ -928,7 +936,7 @@ class CogcompKairosEventExtractorTest:
                         if tmp_pos not in selected_trigger_positions_set:
                             if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="V", stop_words=stop_words_list): 
                                 #### test begin
-                                if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit: 
+                                if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit_verb: 
                                     #### test end
                                     selected_trigger_positions.append(tmp_pos)
 
@@ -948,7 +956,7 @@ class CogcompKairosEventExtractorTest:
                         if tmp_pos not in selected_trigger_positions_set:
                             if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="V", stop_words=stop_words_list): 
                                 #### test begin
-                                if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit: 
+                                if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit_nominal: 
                                     #### test end
                                     selected_trigger_positions.append(tmp_pos)
 
@@ -1056,7 +1064,9 @@ class CogcompKairosEventExtractorTest:
 
         # print("***Processing Time(Typing) :", time()-start_time_type)
         # print("***Processing Time (extract except SRL and NER): ", time() - start_time)
-        return predictions, tokens, SRL_sentences
+        if demo_version:
+            return predictions, tokens, SRL_sentences, verb_srl_temporal
+        return predictions
 
     def extract_with_annotation(self, input_sentence, tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments):
 
