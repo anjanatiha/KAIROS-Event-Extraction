@@ -297,12 +297,13 @@ class MyWebService(object):
             all_tokens = list()
             sentence_positions = list()
             previous_char = 0
+            verb_srl = []
             for s_id, tmp_s in enumerate(sentences):
                 # print(s_id, " : ", tmp_s)
                 # start_time_event = time()
-                extracted_events, tmp_tokens, SRL_sentences2 = extractor.extract(tmp_s, include_all_verbs=True, include_all_nouns=True)
+                extracted_events, tmp_tokens, SRL_sentences2, verb_srl_tmp = extractor.extract(tmp_s, include_all_verbs=True, include_all_nouns=False, demo_version=True)
                 # print("Processing Time for 1 sentence event extraction: ", time() - start_time_event)
-                
+                verb_srl.append(verb_srl_tmp)
                 print(extracted_events)
                 # if len(extracted_events) > 0:
                 #     tmp_tokens = extracted_events[0]['tokens']
@@ -364,6 +365,8 @@ class MyWebService(object):
         print("***Average Time for Event Extraction   : ", (end_time - start_time)/len(SRL_sentences['sentenceEndPositions']))
         # print(result)
         # print("\n")
+        if "task" in data and data["task"]=="include_verb_srl":
+            return {"result": result, "verb_srl_temporal": verb_srl}
         return result
 
     @cherrypy.expose
@@ -449,7 +452,7 @@ class MyWebService(object):
             # for s_id, tmp_s in enumerate(sentences):
             # print(s_id, " : ", tmp_s)
             # start_time_event = time()
-            extracted_events, tmp_tokens, SRL_sentences = extractor.extract(input_paragraph, include_all_verbs=False)
+            extracted_events, tmp_tokens, SRL_sentences, verb_srl = extractor.extract(input_paragraph, include_all_verbs=False, include_all_nouns=Fase, demo_version=True)
             # print("Processing Time for 1 sentence event extraction: ", time() - start_time_event)
             
             print(extracted_events)
