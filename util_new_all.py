@@ -27,6 +27,7 @@ nltk.download('framenet_v17')
 from nltk.corpus import framenet as fn
 from nltk.stem.wordnet import WordNetLemmatizer
 
+# freq_limit_verb  = 1
 freq_limit_verb  = 0.00006
 freq_limit_nominal  = 0.00001
 
@@ -644,6 +645,7 @@ def Get_CogComp_SRL_and_NER_results(input_sentence):
         return tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments
 
     NER_result = json.loads(NER_response.text)
+    # print("NER_result: \n", NER_result)
     tokens = NER_result['tokens']
     NER_selected_view = dict()
     for tmp_view in NER_result['views']:
@@ -906,6 +908,16 @@ class CogcompKairosEventExtractorTest:
         print('detected mentions:', detected_mentions)
         print('trigger_to_arguments:', trigger_to_arguments)
         # start_time = time()
+
+        predicate_sense = {}
+        argument_sense = {}
+        # print("verb_SRL_view:\n", verb_SRL_view)
+        for pred in verb_SRL_view["viewData"][0]["constituents"]: 
+            if (pred["label"]=="Predicate"):
+                predicate_sense[pred["start"], pred["end"]] = pred["properties"]["sense"]
+        
+        for arg in verb_SRL_view["viewData"][0]["relations"]:
+            argument_sense[arg["srcConstituent"], arg["targetConstituent"]] = arg["sense"]
         
         selected_trigger_positions = list()
 
@@ -983,8 +995,8 @@ class CogcompKairosEventExtractorTest:
             #     predicate_score.append(
             #         get_similarity_score(tmp_embedding, self.etype_to_distinct_embeddings[tmp_etype]))
             # argument_scores = list()
-            entity_types = list()
-            for tmp_argument_position in trigger_to_arguments[tmp_trigger_position]:
+            # entity_types = list()
+            # for tmp_argument_position in trigger_to_arguments[tmp_trigger_position]:
             #     sent_emb = get_represetation(tokens, (tmp_argument_position[0],
             #                                           tmp_argument_position[1]),
             #                                  self.tokenizer, self.model, self.device, representation_type='mask')
@@ -992,63 +1004,45 @@ class CogcompKairosEventExtractorTest:
             #     for tmp_r_type in role_types:
             #         tmp_scores.append(get_similarity_score(sent_emb, self.rtype_to_distinct_embeddings[tmp_r_type]))
             #     argument_scores.append(tmp_scores)
-                if tmp_argument_position in detected_mentions:
-                    entity_types.append(detected_mentions[tmp_argument_position].lower())
-                else:
-                    entity_types.append('NAN')
+                # if tmp_argument_position in detected_mentions:
+                #     entity_types.append(detected_mentions[tmp_argument_position].lower())
+                # else:
+                #     entity_types.append('NAN')
             # if len(argument_scores) > 0:
-                # tmp_optimizer = gurobi_opt(predicate_score, argument_scores, entity_types, event_types,
-                #                            role_types, weight=10)
+            #     tmp_optimizer = gurobi_opt(predicate_score, argument_scores, entity_types, event_types,
+            #                                role_types, weight=10)
 
-                # optimized_predicates, optimized_arguments = tmp_optimizer.optimize_all()
+            #     optimized_predicates, optimized_arguments = tmp_optimizer.optimize_all()
 
-            # trigger_type_prediction = optimized_predicates[0]
-
+            #     trigger_type_prediction = optimized_predicates[0]
 
             trigger_type_prediction = 'None'
-            x = fn.frames(tokens[tmp_trigger_position[0]])
-            x.sort(key=itemgetter('ID'))
-            if len(x) > 0:
-                trigger_type_prediction = x[0]["name"]
-                # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
-            
+
+            if tmp_trigger_position in predicate_sense:
+                trigger_type_prediction = predicate_sense[tmp_trigger_position]
+            elif tmp_trigger_position in predicate_sense:
+                trigger_type_prediction = detected_mentions[tmp_trigger_position]
             else:
-                x = fn.frames(WordNetLemmatizer().lemmatize(tokens[tmp_trigger_position[0]],'v'))
+                x = fn.frames(tokens[tmp_trigger_position[0]])
                 x.sort(key=itemgetter('ID'))
                 if len(x) > 0:
                     trigger_type_prediction = x[0]["name"]
-                    # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
+                # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
+            
+                else:
+                    x = fn.frames(WordNetLemmatizer().lemmatize(tokens[tmp_trigger_position[0]],'v'))
+                    x.sort(key=itemgetter('ID'))
+                    if len(x) > 0:
+                        trigger_type_prediction = x[0]["name"]
+                        # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
             # sorted(x, key=itemgetter('ID'))
 
-            # if trigger_type_prediction == 'None':
-                # print(optimized_predicates)
-            argument_type_predictions = list()
-            # for tmp_types in optimized_arguments:
-            #     argument_type_predictions.append(tmp_types[0])
+            #     # if trigger_type_prediction == 'None':
+            #     #     print(optimized_predicates)
+                # argument_type_predictions = list()
+            #     for tmp_types in optimized_arguments:
+            #         argument_type_predictions.append(tmp_types[0])
 
-            for tmp_trigger_to_arguments in trigger_to_arguments[tmp_trigger_position]:
-                x = fn.frames(tokens[tmp_trigger_to_arguments[0]])
-                x.sort(key=itemgetter('ID'))
-                l = 0
-                if len(x) > 0:
-                    for i in x:
-                        argument_type_predictions.append(i["name"])
-                        # print("Argument: ", tokens[tmp_trigger_to_arguments[0]], " , Argument_type_prediction: ", i["name"])
-                        l = l + 1
-                        if l > 2:
-                            break
-                else:
-                    x = fn.frames(WordNetLemmatizer().lemmatize(tokens[tmp_trigger_to_arguments[0]],'v'))
-                    x.sort(key=itemgetter('ID'))
-                    l = 0
-                    if len(x) > 0:
-                        for i in x:
-                            # print("Argument: ", tokens[tmp_trigger_to_arguments[0]], " , Argument_type_prediction: ", i["name"])
-                            l = l + 1
-                            if l > 2:
-                                break
-                    else:
-                        argument_type_predictions.append('None')
             # else:
             #     scores = list()
             #     for tmp_score in predicate_score:
@@ -1094,8 +1088,45 @@ class CogcompKairosEventExtractorTest:
             #     tmp_event['tokens'] = tokens
             #     predictions.append(tmp_event)
             ### added
+
+            argument_type_predictions = list()
+            # for i, tmp_argument_position in enumerate(trigger_to_arguments[tmp_trigger_position]):
+            for tmp_trigger_to_arguments in trigger_to_arguments[tmp_trigger_position]:
+                if tmp_trigger_to_arguments in argument_sense:
+                    argument_type_predictions.append(argument_sense[tmp_trigger_to_arguments])
+                elif detected_mentions[tmp_trigger_to_arguments]:
+                    argument_type_predictions.append(detected_mentions[tmp_trigger_to_arguments])
+                else:
+                    x = fn.frames(tokens[tmp_trigger_to_arguments[0]])
+                    x.sort(key=itemgetter('ID'))
+                    # l = 0
+                    if len(x) > 0:
+                        argument_type_predictions.append(x[0]["name"])
+                        # for i in x:
+                        #     argument_type_predictions.append(i["name"])
+                        #     # print("Argument: ", tokens[tmp_trigger_to_arguments[0]], " , Argument_type_prediction: ", i["name"])
+                        #     l = l + 1
+                        #     if l > 2:
+                        #         break
+                    else:
+                        x = fn.frames(WordNetLemmatizer().lemmatize(tokens[tmp_trigger_to_arguments[0]],'v'))
+                        x.sort(key=itemgetter('ID'))
+                        
+                        # l = 0
+                        if len(x) > 0:
+                            argument_type_predictions.append(x[0]["name"])
+                            # for i in x:
+                                # print("Argument: ", tokens[tmp_trigger_to_arguments[0]], " , Argument_type_prediction: ", i["name"])
+                                # l = l +  1
+                                # if l > 2:
+                                    # break
+                        else:
+                            # argument_type_predictions.append(detected_mentions[tmp_argument_position])
+                            argument_type_predictions.append('None')
+
+
             tmp_event = dict()
-            tmp_event['trigger'] = {'position': tmp_trigger_position, 'type': trigger_type_prediction}
+            tmp_event['trigger'] = {'position': tmp_trigger_position, 'type':  trigger_type_prediction}
             tmp_event['arguments'] = list()
             for i, tmp_argument_position in enumerate(trigger_to_arguments[tmp_trigger_position]):
                 tmp_event['arguments'].append(
