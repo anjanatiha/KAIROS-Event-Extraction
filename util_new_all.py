@@ -1018,22 +1018,28 @@ class CogcompKairosEventExtractorTest:
 
             trigger_type_prediction = 'None'
 
-            if tmp_trigger_position in predicate_sense:
-                trigger_type_prediction = predicate_sense[tmp_trigger_position]
-            elif tmp_trigger_position in predicate_sense:
-                trigger_type_prediction = detected_mentions[tmp_trigger_position]
+            x = fn.frames('(?i)' + tokens[tmp_trigger_position[0]] + '(?i)')
+            x.sort(key=itemgetter('ID'))
+            if len(x) > 0:
+                trigger_type_prediction = x[0]["name"]
+            # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
+        
             else:
-                x = fn.frames(tokens[tmp_trigger_position[0]])
-                x.sort(key=itemgetter('ID'))
+                x = fn.frames('(?i)' + WordNetLemmatizer().lemmatize(tokens[tmp_trigger_position[0]],'v') + '(?i)')
+                # x.sort(key=itemgetter('ID'))
                 if len(x) > 0:
                     trigger_type_prediction = x[0]["name"]
-                # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
-            
                 else:
-                    x = fn.frames(WordNetLemmatizer().lemmatize(tokens[tmp_trigger_position[0]],'v'))
-                    x.sort(key=itemgetter('ID'))
-                    if len(x) > 0:
-                        trigger_type_prediction = x[0]["name"]
+                    if tmp_trigger_position in predicate_sense:
+                        x = fn.frames_by_lemma('(?i)' + predicate_sense[tmp_trigger_position] + '(?i)')
+                        # x.sort(key=itemgetter('ID'))
+                        if len(x) > 0:
+                            trigger_type_prediction = x[0]["name"]
+                        else:
+                            trigger_type_prediction = predicate_sense[tmp_trigger_position]
+                    elif tmp_trigger_position in predicate_sense:
+                        trigger_type_prediction = detected_mentions[tmp_trigger_position]
+                
                         # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
             # sorted(x, key=itemgetter('ID'))
 
@@ -1097,8 +1103,8 @@ class CogcompKairosEventExtractorTest:
                 elif detected_mentions[tmp_trigger_to_arguments]:
                     argument_type_predictions.append(detected_mentions[tmp_trigger_to_arguments])
                 else:
-                    x = fn.frames(tokens[tmp_trigger_to_arguments[0]])
-                    x.sort(key=itemgetter('ID'))
+                    x = fn.frames('(?i)' + tokens[tmp_trigger_to_arguments[0]] + '(?i)')
+                    # x.sort(key=itemgetter('ID'))
                     # l = 0
                     if len(x) > 0:
                         argument_type_predictions.append(x[0]["name"])
@@ -1109,8 +1115,8 @@ class CogcompKairosEventExtractorTest:
                         #     if l > 2:
                         #         break
                     else:
-                        x = fn.frames(WordNetLemmatizer().lemmatize(tokens[tmp_trigger_to_arguments[0]],'v'))
-                        x.sort(key=itemgetter('ID'))
+                        x = fn.frames('(?i)' + WordNetLemmatizer().lemmatize(tokens[tmp_trigger_to_arguments[0]],'v') + '(?i)')
+                        # x.sort(key=itemgetter('ID'))
                         
                         # l = 0
                         if len(x) > 0:
