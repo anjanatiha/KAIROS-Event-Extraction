@@ -20,12 +20,16 @@ import json
 import nltk
 from nltk.corpus import stopwords
 from operator import itemgetter
+# from spacy.lookups import Lookups
+import re
+from nltk.corpus import framenet as fn
+from nltk.stem.wordnet import WordNetLemmatizer
+# from nltk.corpus import words
+from nltk.corpus import wordnet as wn
+
 nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('framenet_v17')
-# from spacy.lookups import Lookups
-from nltk.corpus import framenet as fn
-from nltk.stem.wordnet import WordNetLemmatizer
 
 # freq_limit_verb  = 1
 freq_limit_verb  = 0.00006
@@ -33,6 +37,7 @@ freq_limit_nominal  = 0.00001
 
 stop_words_list = set(stopwords.words('english'))
 exclude_words_list = set({ "according", "suggest", "suggests", "suggested", "suggesting", "tell", "tells", "telling", "told", "say", "says", "said", "saying", "based", "would", "including", "understand", "understands", "understood", "think", "thinks", "thinking", "thought"})
+
 def filter_words(w, exclude_words=(), no_stop_words=True, tag_prefix="", selected_tags=[], stop_words=stop_words_list):
     if w in exclude_words:
         # print(w, " in ", "exclude_words_list")
@@ -48,6 +53,37 @@ def filter_words(w, exclude_words=(), no_stop_words=True, tag_prefix="", selecte
     # else:
     #     print(w, " is ", tagged)
     return True
+
+
+def get_event_typing(w, thres = 0.0, m = 3, depth = 3):
+    hyper = lambda s: s.hypernyms()
+    ws = wn.synsets(w)
+    types = {}
+    for e in ws:
+        tmp_event_types = list(e.closure(hyper))
+        t = 0
+        c = 0 
+        i = 0
+        tmp_types = ""
+        for tmp_event in tmp_event_types:
+            d = wn.path_similarity(e, tmp_event)
+    #         print(tmp_event, d)
+            b = m**i
+            t = t + d/b
+            if d and (d>=thres/b):
+                tmp_types = tmp_types + ":" + tmp_event.name().split(".")[0]
+                c = c + 1
+                if c >= depth:
+                    break
+            i = i + 1
+        if len(tmp_types) > 0:
+            types[t] = tmp_types
+    #     print("\n")
+
+
+    types = {k: v for k, v in sorted(types.items(), key=lambda item: item[0], reverse=True)}
+    
+    return types
 
 def load_event_ontology(path):
     # we need to load the event ontology
@@ -1039,6 +1075,9 @@ class CogcompKairosEventExtractorTest:
                             trigger_type_prediction = predicate_sense[tmp_trigger_position]
                     elif tmp_trigger_position in predicate_sense:
                         trigger_type_prediction = detected_mentions[tmp_trigger_position]
+                    else:
+                        event_types_dict = get_event_typing(tokens[tmp_trigger_position[0]], thres = 0.0, m = 3, depth=3)
+                        trigger_type_prediction = [elem for elem in event_types_dict.values()][0]
                 
                         # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
             # sorted(x, key=itemgetter('ID'))
