@@ -1,31 +1,36 @@
-import spacy
-import shutil
-import ujson as json
 import os
-from tqdm import tqdm
-from multiprocessing import Pool
-import pandas
-import torch
 import argparse
+import requests
+from operator import itemgetter
+import re
+import json
+import ujson as json
+import shutil
+from multiprocessing import Pool
+
+from tqdm import tqdm
+import numpy as np
+import pandas
+import spacy
+
+import nltk
+from nltk.corpus import stopwords
+from nltk.corpus import framenet as fn
+from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.corpus import wordnet as wn
+# from nltk.corpus import words
+
+import torch
 from allennlp.predictors.predictor import Predictor
 from transformers import BertTokenizer, BertModel
 import allennlp_models.tagging
-from gurobi import *
-import numpy as np
 from spacy.lemmatizer import Lemmatizer
-import requests
+from gurobi import *
+
 from time import time
 
-import json
-import nltk
-from nltk.corpus import stopwords
-from operator import itemgetter
-# from spacy.lookups import Lookups
-import re
-from nltk.corpus import framenet as fn
-from nltk.stem.wordnet import WordNetLemmatizer
-# from nltk.corpus import words
-from nltk.corpus import wordnet as wn
+from event_typing import *
+from preprocess_input import *
 
 nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
@@ -55,35 +60,36 @@ def filter_words(w, exclude_words=(), no_stop_words=True, tag_prefix="", selecte
     return True
 
 
-def get_event_typing(w, thres = 0.0, m = 3, depth = 3):
-    hyper = lambda s: s.hypernyms()
-    ws = wn.synsets(w)
-    types = {}
-    for e in ws:
-        tmp_event_types = list(e.closure(hyper))
-        t = 0
-        c = 0 
-        i = 0
-        tmp_types = ""
-        for tmp_event in tmp_event_types:
-            d = wn.path_similarity(e, tmp_event)
-    #         print(tmp_event, d)
-            b = m**i
-            t = t + d/b
-            if d and (d>=thres/b):
-                tmp_types = tmp_types + ":" + tmp_event.name().split(".")[0]
-                c = c + 1
-                if c >= depth:
-                    break
-            i = i + 1
-        if len(tmp_types) > 0:
-            types[t] = tmp_types
-    #     print("\n")
+# def get_event_typing(w, thres = 0.0, m = 3, depth = 3):
+#     hyper = lambda s: s.hypernyms()
+#     ws = wn.synsets(w)
+#     types = {}
+#     for e in ws:
+#         if e.name().split(".")[0]==w:
+#             tmp_event_types = list(e.closure(hyper))
+#             t = 0
+#             c = 0 
+#             i = 0
+#             tmp_types = ""
+#             for tmp_event in tmp_event_types:
+#                 d = wn.path_similarity(e, tmp_event)
+#         #         print(tmp_event, d)
+#                 b = m**i
+#                 t = t + d/b
+#                 if d and (d>=thres/t):
+#                     tmp_types = tmp_types + ":" + tmp_event.name().split(".")[0]
+#                     c = c + 1
+#                     if c >= depth:
+#                         break
+#                 i = i + 1
+#             if len(tmp_types) > 0:
+#                 types[t] = tmp_types
+#         #     print("\n")
 
 
-    types = {k: v for k, v in sorted(types.items(), key=lambda item: item[0], reverse=True)}
+#     types = {k: v for k, v in sorted(types.items(), key=lambda item: item[0], reverse=True)}
     
-    return types
+#     return types
 
 def load_event_ontology(path):
     # we need to load the event ontology
@@ -929,6 +935,7 @@ class CogcompKairosEventExtractorTest:
         tokens, detected_mentions, identified_trigger_positions, trigger_to_arguments, verb_SRL_view, nominal_SRL_view, SRL_sentences, verb_srl_temporal = Get_CogComp_SRL_and_NER_results(
             input_sentence)
 
+        '''
         print("\n---TOKENS:")
         for i in range(len(tokens)):
             print(i, " : ", tokens[i], end=" , ")
@@ -944,6 +951,7 @@ class CogcompKairosEventExtractorTest:
         print('detected mentions:', detected_mentions)
         print('trigger_to_arguments:', trigger_to_arguments)
         # start_time = time()
+        '''
 
         predicate_sense = {}
         argument_sense = {}
@@ -970,12 +978,14 @@ class CogcompKairosEventExtractorTest:
             # print(sorted_types[:5])
             if decision:
                 selected_trigger_positions.append(tmp_position)
+        '''
         # print("***Processing Time (Onto) : ", time() - start_time_onto)
         print('selected trigger positions : ', selected_trigger_positions)
         print("\n---Selected Triggers: \n")
         for i in range(len(selected_trigger_positions)):
             print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
         print("\n")
+        '''
 
 
         if include_all_verbs:
@@ -986,17 +996,19 @@ class CogcompKairosEventExtractorTest:
                     if constituent['label'] == 'Predicate':
                         tmp_pos = (constituent['start'] , constituent['end'])
                         if tmp_pos not in selected_trigger_positions_set:
-                            if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="V", stop_words=stop_words_list): 
+                            if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="VB", stop_words=stop_words_list): 
                                 #### test begin
                                 # if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit_verb: 
                                     #### test end
                                 selected_trigger_positions.append(tmp_pos)
 
+                '''
                 print('selected trigger positions(all verbs included): ', selected_trigger_positions)
                 print("\n---Selected Triggers((all verbs included)):")
                 for i in range(len(selected_trigger_positions)):
                     print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
                 print("\n")
+                '''
 
         if include_all_nouns:
             selected_trigger_positions_set = set([(x,y) for (x,y) in selected_trigger_positions])
@@ -1006,18 +1018,20 @@ class CogcompKairosEventExtractorTest:
                     if constituent['label'] == 'Predicate':
                         tmp_pos = (constituent['start'] , constituent['end'])
                         if tmp_pos not in selected_trigger_positions_set:
-                            if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="V", stop_words=stop_words_list): 
+                            if filter_words(tokens[tmp_pos[0]], exclude_words=exclude_words_list, tag_prefix="NN", stop_words=stop_words_list): 
                                 #### test begin
                                 if (tokens[tmp_pos[0]] in word_fequency) and word_fequency[tokens[tmp_pos[0]]] <= freq_limit_nominal: 
                                     #### test end
                                     selected_trigger_positions.append(tmp_pos)
 
+                '''
                 print('selected trigger positions(all nouns included): ', selected_trigger_positions)
                 print("\n---Selected Triggers((all verbs included)):")
                 for i in range(len(selected_trigger_positions)):
                     print(i, " : ", tokens[selected_trigger_positions[i][0]], end=" , ")
                 print("\n")
-
+                '''
+                
         # start_time_type = time()
         predictions = list()
         for tmp_trigger_position in selected_trigger_positions:
@@ -1051,11 +1065,12 @@ class CogcompKairosEventExtractorTest:
             #     optimized_predicates, optimized_arguments = tmp_optimizer.optimize_all()
 
             #     trigger_type_prediction = optimized_predicates[0]
-
+            
+            
             trigger_type_prediction = 'None'
 
             x = fn.frames('(?i)' + tokens[tmp_trigger_position[0]] + '(?i)')
-            x.sort(key=itemgetter('ID'))
+            # x.sort(key=itemgetter('ID'))
             if len(x) > 0:
                 trigger_type_prediction = x[0]["name"]
             # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
@@ -1066,18 +1081,21 @@ class CogcompKairosEventExtractorTest:
                 if len(x) > 0:
                     trigger_type_prediction = x[0]["name"]
                 else:
-                    if tmp_trigger_position in predicate_sense:
-                        x = fn.frames_by_lemma('(?i)' + predicate_sense[tmp_trigger_position] + '(?i)')
-                        # x.sort(key=itemgetter('ID'))
-                        if len(x) > 0:
-                            trigger_type_prediction = x[0]["name"]
-                        else:
-                            trigger_type_prediction = predicate_sense[tmp_trigger_position]
-                    elif tmp_trigger_position in predicate_sense:
-                        trigger_type_prediction = detected_mentions[tmp_trigger_position]
-                    else:
-                        event_types_dict = get_event_typing(tokens[tmp_trigger_position[0]], thres = 0.0, m = 3, depth=3)
-                        trigger_type_prediction = [elem for elem in event_types_dict.values()][0]
+                    # event_types_dict = get_event_typing(tokens[tmp_trigger_position[0]], thres = 0.0, m = 3, depth=3)
+                    event_types_dict, event_types_dict2 = get_event_typing_helper(tokens[tmp_trigger_position[0]], pos="", thres=0.0, m=3, depth=3)
+                    if len(event_types_dict)>0:
+                        # trigger_type_prediction = [elem for elem in event_types_dict.values()][0]
+                        trigger_type_prediction = list(event_types_dict.keys())[0]
+                    elif len(trigger_type_prediction)==0:
+                        if tmp_trigger_position in predicate_sense:
+                            x = fn.frames_by_lemma('(?i)' + predicate_sense[tmp_trigger_position] + '(?i)')
+                            # x.sort(key=itemgetter('ID'))
+                            if len(x) > 0:
+                                trigger_type_prediction = x[0]["name"]
+                            else:
+                                trigger_type_prediction = predicate_sense[tmp_trigger_position]
+                        elif tmp_trigger_position in detected_mentions:
+                            trigger_type_prediction = detected_mentions[tmp_trigger_position]
                 
                         # print("Token: ", tokens[tmp_trigger_position[0]], " , trigger_type_prediction:", trigger_type_prediction)
             # sorted(x, key=itemgetter('ID'))
